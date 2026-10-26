@@ -69,6 +69,12 @@ button, select {
   border-radius: 999px; border: 1px solid var(--edge);
   background: rgba(228, 239, 231, 0.06); padding: 11px 16px; cursor: pointer;
 }
+button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; line-height: 1; padding-block: 0; text-box: trim-both cap alphabetic; }
+button.wide { display: flex; min-height: 50px; }
+button.link { min-height: 0; }
+.seg-choice span { text-box: trim-both cap alphabetic; padding-block: 14px; }
+.seg-choice span small { margin-top: 8px; }
+.stepper output, .clock, .stat .v, .wordmark { text-box: trim-both cap alphabetic; }
 button:hover { background: rgba(228, 239, 231, 0.11); }
 button:focus-visible, select:focus-visible, input:focus-visible + span { outline: 2px solid var(--sage); outline-offset: 2px; }
 button.primary { background: var(--sage); color: var(--on-sage); border-color: transparent; font-weight: 600; }
@@ -133,7 +139,7 @@ h2 { margin: 0; font: 400 24px/1.15 var(--display); text-wrap: balance; }
 details.more { border-top: 1px solid var(--edge); padding-top: 12px; }
 details.more summary { cursor: pointer; color: var(--muted); font-size: 14px; list-style: none; display: flex; align-items: center; gap: 6px; }
 details.more summary::-webkit-details-marker { display: none; }
-details.more summary::before { content: "+"; font: 500 16px/1 var(--mono); width: 14px; }
+details.more summary::before { content: "+"; font: 400 18px/1 system-ui, sans-serif; width: 14px; text-align: center; }
 details.more[open] summary::before { content: "−"; }
 .more-body { display: grid; gap: 12px; padding-top: 12px; }
 .opt { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; }
@@ -215,7 +221,7 @@ input[type=checkbox] { accent-color: var(--sage); width: 17px; height: 17px; }
   <div class="view" id="vIdle" hidden>
     <div class="row split">
       <h2>Your session</h2>
-      <button class="close" id="btnClose" aria-label="Close">×</button>
+      <button class="close" id="btnClose" aria-label="Close"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
     </div>
     <p class="note" id="noSource">Tap the heart in the corner to connect your strap.</p>
 
@@ -238,9 +244,9 @@ input[type=checkbox] { accent-color: var(--sage); width: 17px; height: 17px; }
       <p class="sub" id="adaptiveNote"></p>
       <div class="pace-row" id="fixedRow" hidden>
         <div class="stepper">
-          <button id="rateDown" aria-label="Slower">−</button>
+          <button id="rateDown" aria-label="Slower"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
           <output id="rateOut">6.0</output>
-          <button id="rateUp" aria-label="Faster">+</button>
+          <button id="rateUp" aria-label="Faster"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h10M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
         </div>
         <span class="unit">breaths / min</span>
       </div>
@@ -748,8 +754,31 @@ function updateUI(now) {
 
 // ---------- audio ----------
 let AC = null;
+// iPhone needs three things for the bell: an audio context created and resumed from a tap,
+// a "playback" audio session so the silent switch doesn't mute it, and (in browsers without
+// navigator.audioSession, like Bluefy) a looping silent <audio> element that holds that session open.
+let keepAlive = null;
+function unlockAudio() {
+  if (S.sound === "off") return;
+  initAudio();
+  if (!AC) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+  if (AC.state !== "running") AC.resume().catch(() => {});
+  try {
+    const src = AC.createBufferSource();
+    src.buffer = AC.createBuffer(1, 1, 22050);
+    src.connect(AC.destination); src.start(0);
+  } catch (e) {}
+  if (!keepAlive) {
+    keepAlive = new Audio("data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==");
+    keepAlive.loop = true;
+    keepAlive.setAttribute("playsinline", "");
+    keepAlive.volume = 0.01;
+  }
+  if (keepAlive.paused) keepAlive.play().catch(() => {});
+}
 function initAudio() {
-  if (AC) { AC.resume(); return; }
+  if (AC) { if (AC.state !== "running") AC.resume().catch(() => {}); return; }
   try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; }
 }
 // A soft struck bell: inharmonic partials that ring out, the high ones fading first.
@@ -757,6 +786,7 @@ function initAudio() {
 const BELL_PARTIALS = [[1, 1], [2.0, 0.32], [2.76, 0.16], [4.07, 0.07], [5.4, 0.04]];
 function bell(inhale) {
   if (!AC || S.sound === "off") return;
+  if (AC.state !== "running") { AC.resume().catch(() => {}); return; }
   if (!inhale && S.sound !== "turn") return;
   const t = AC.currentTime;
   const f = inhale ? 392.0 : 293.66;          // G4 in, D4 out
@@ -912,13 +942,13 @@ $("hrMenu").onclick = (e) => e.stopPropagation();
 document.addEventListener("click", () => closeMenu());
 $("btnConnect").onclick = connectStrap;
 $("btnSim").onclick = startSim;
-$("btnStart").onclick = startSession;
-$("btnAssess").onclick = startAssess;
+$("btnStart").onclick = () => { unlockAudio(); startSession(); };
+$("btnAssess").onclick = () => { unlockAudio(); startAssess(); };
 $("btnEnd").onclick = stopAll;
 $("btnStopAssess").onclick = stopAll;
 $("btnResDone").onclick = () => { S.mode = "idle"; show("vHome"); };
 $("btnSumDone").onclick = () => { S.mode = "idle"; show("vHome"); };
-$("btnOpen").onclick = () => show("vIdle");
+$("btnOpen").onclick = () => { unlockAudio(); show("vIdle"); };
 $("btnClose").onclick = () => show("vHome");
 $("btnGraph").onclick = () => { graphOpen = !graphOpen; $("traceBox").hidden = !graphOpen; $("btnGraph").textContent = graphOpen ? "Hide graph" : "Show graph"; };
 // Session view: "full" (timer and stats), "graph" (graph and light), "light" (light only)
@@ -941,9 +971,12 @@ $("rateDown").onclick = () => setRate(S.setRate - 0.25);
 $("rateUp").onclick = () => setRate(S.setRate + 0.25);
 document.querySelectorAll('input[name="pace"]').forEach((el) => el.addEventListener("change", onPaceChange));
 document.querySelectorAll('input[name="len"]').forEach((el) => el.addEventListener("change", () => store.set("timbre.len", sessionMinutes())));
+// Any tap re-unlocks audio (iPhone suspends it after the screen locks or the app switches).
+["touchend", "click"].forEach((ev) => document.addEventListener(ev, unlockAudio, { passive: true }));
 $("selSound").onchange = (e) => {
   S.sound = e.target.value;
-  if (S.sound !== "off") { initAudio(); bell(true); }
+  if (S.sound !== "off") { unlockAudio(); setTimeout(() => bell(true), 150); }
+  else if (keepAlive) keepAlive.pause();
   store.set("timbre.sound", S.sound);
 };
 $("chkWords").onchange = (e) => { S.words = e.target.checked; store.set("timbre.words", S.words ? "1" : "0"); };
@@ -967,7 +1000,7 @@ document.addEventListener("visibilitychange", () => {
   if (mapped === "breath" || mapped === "turn") {
     $("selSound").value = mapped; S.sound = mapped;
     // Browsers only allow sound after a tap, so a saved choice switches on at the first tap.
-    document.addEventListener("pointerdown", () => initAudio(), { once: true });
+
   }
 }
 $("rateOut").textContent = fmtRate(S.setRate);
